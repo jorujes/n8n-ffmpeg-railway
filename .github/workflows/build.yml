@@ -1,0 +1,39 @@
+name: build-and-push
+on:
+  push:
+    branches: [ "main" ]
+
+# O GITHUB_TOKEN precisa poder publicar no GHCR
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: n8n-ffmpeg-railway
+  N8N_TAG: 1.111.1  # pin da base do n8n (ajuste se quiser outra)
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # publica com duas tags: a pinada e a "latest"
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.N8N_TAG }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            N8N_TAG=${{ env.N8N_TAG }}
